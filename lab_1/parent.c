@@ -2,11 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <sys/socket.h>
 
 #define MAX_LINE_SIZE 1024
-
-// 17 вариант
 
 int main() {
     int pipe1[2], pipe2[2];
@@ -41,32 +38,33 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if (pid1 != 0){
-        pid2 = fork();
-        if (pid2 == -1) {
-            exit(EXIT_FAILURE);
-        }
-
-        if (pid2 == 0) {
-            close(pipe2[1]);
-            dup2(pipe2[0], STDIN_FILENO); 
-            execl("./child2", "child2", filename2, NULL);
-            close(pipe2[0]);
-
-            exit(EXIT_FAILURE);
-        }
+    pid2 = fork();
+    if (pid2 == -1) {
+        exit(EXIT_FAILURE);
     }
 
-    // Parent process
-    close(pipe1[0]);
-    close(pipe2[0]);
+    if (pid2 == 0) {
+        close(pipe2[1]); 
+        dup2(pipe2[0], STDIN_FILENO); 
+        execl("./child2", "child2", filename2, NULL);
+        close(pipe2[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    close(pipe1[0]); 
+    close(pipe2[0]); 
 
     while (1) {
         write(STDOUT_FILENO, "Enter a line (or 'exit' to quit): ", 34);
         len = read(STDIN_FILENO, buffer, MAX_LINE_SIZE);
-        buffer[len - 1] = '\0';
+        if (len <= 0) {
+            break;
+        }
+        buffer[len - 1] = '\0'; 
 
         if (strcmp(buffer, "exit") == 0) {
+            close(pipe1[1]);
+            close(pipe2[1]);    
             break;
         }
 
@@ -82,9 +80,11 @@ int main() {
 
     if (pid1 != 0){
         wait(NULL);
+    }
+    if (pid2 != 0){
         wait(NULL);
     }
-    
+    // wait(NULL);
 
     return 0;
 }
