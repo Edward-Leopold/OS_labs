@@ -63,8 +63,8 @@ int main() {
         buffer[len - 1] = '\0'; 
 
         if (strcmp(buffer, "exit") == 0) {
-            close(pipe1[1]);
-            close(pipe2[1]);    
+            write(pipe1[1], "exit", 5);
+            write(pipe2[1], "exit", 5);
             break;
         }
 
