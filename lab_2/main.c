@@ -3,13 +3,15 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <semaphore.h>
 
 #define MAX_THREADS 4
 
-
 pthread_mutex_t mutex;
 
-typedef struct ThreadObj{
+sem_t semaphore;
+
+typedef struct ThreadObj {
     int len;
     int* result;
     int* array;
@@ -25,22 +27,20 @@ void* process_array(void* arg) {
     }
 
     free(args);
+    sem_post(&semaphore); 
+
     return NULL;
 }
-
 
 void sum_arrays(int len, int* result, int num_arrays, ...) {
     va_list args;
     va_start(args, num_arrays);
 
     pthread_t threads[MAX_THREADS];
-    int threads_created = 0;
+    int threads_count = 0;
 
     for (int i = 0; i < num_arrays; i++) {
-        if (threads_created >= MAX_THREADS) {
-            pthread_join(threads[threads_created % MAX_THREADS], NULL);
-            threads_created--;
-        }
+        sem_wait(&semaphore);
 
         int* array = va_arg(args, int*);
 
@@ -49,29 +49,36 @@ void sum_arrays(int len, int* result, int num_arrays, ...) {
         thread_args->result = result;
         thread_args->array = array;
 
-        pthread_create(&threads[threads_created % MAX_THREADS], NULL, process_array, thread_args);
-        threads_created++;
+        pthread_create(&threads[threads_count % MAX_THREADS], NULL, process_array, thread_args);
+        threads_count++;
     }
-
-    for (int i = 0; i < threads_created; i++) {
-        pthread_join(threads[i], NULL);
-    }
-    // pthread_exit(NULL);
 
     va_end(args);
+
+    for (int i = 0; i < (threads_count < MAX_THREADS ? threads_count : MAX_THREADS); i++) {
+        pthread_join(threads[i], NULL);
+    }
 }
 
 int main() {
     int len = 10;
-    int num_arrays = 3;
+    int num_arrays = 8;
 
     int arr1[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     int arr2[10] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
     int arr3[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    int arr4[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    int arr5[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    int arr6[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    int arr7[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    int arr8[10] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
     int* result = (int*)calloc(len, sizeof(int));
 
-    sum_arrays(len, result, num_arrays, arr1, arr2, arr3);
+    pthread_mutex_init(&mutex, NULL);
+    sem_init(&semaphore, 0, MAX_THREADS);
+
+    sum_arrays(len, result, num_arrays, arr1, arr2, arr3, arr4, arr5, arr6, arr7, arr8);
 
     write(STDOUT_FILENO, "Result: ", 8);
     for (int i = 0; i < len; i++) {
@@ -82,6 +89,8 @@ int main() {
     write(STDOUT_FILENO, "\n", 1);
 
     free(result);
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&semaphore);
 
     return 0;
 }
