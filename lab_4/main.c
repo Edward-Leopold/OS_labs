@@ -52,25 +52,87 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-    char *allocated_mem = (char *) alloc_alloc(allocator, 500);
-    if (!allocated_mem) {
+    // Test 1
+    char *small_block1 = (char *)alloc_alloc(allocator, 32);
+    char *small_block2 = (char *)alloc_alloc(allocator, 64);
+    if (!small_block1 || !small_block2) {
+        fprintf(stderr, "Failed to allocate small blocks\n");
         return 3;
     }
 
-    char *allocated_mem2 = (char *) alloc_alloc(allocator, 32);
-    if (!allocated_mem2) {
+    small_block1[0] = 'S';
+    small_block1[1] = '1';
+    small_block1[2] = '\0';
+    small_block2[0] = 'S';
+    small_block2[1] = '2';
+    small_block2[2] = '\0';
+
+    write(STDOUT_FILENO, small_block1, 3);
+    write(STDOUT_FILENO, small_block2, 3);
+
+    alloc_free(allocator, small_block1);
+    alloc_free(allocator, small_block2);
+
+    // Test 2
+    char *large_block1 = (char *)alloc_alloc(allocator, 2048);
+    char *large_block2 = (char *)alloc_alloc(allocator, 4096);
+    if (!large_block1 || !large_block2) {
+        fprintf(stderr, "Failed to allocate large blocks\n");
         return 3;
     }
 
-    allocated_mem[0] = '1';
-    allocated_mem[1] = '\0';
-    allocated_mem2[0] = 'l';
-    allocated_mem2[1] = '\0';
+    large_block1[0] = 'L';
+    large_block1[1] = '1';
+    large_block1[2] = '\0';
+    large_block2[0] = 'L';
+    large_block2[1] = '2';
+    large_block2[2] = '\0';
 
-    write(STDOUT_FILENO, allocated_mem, 2);
-    write(STDOUT_FILENO, allocated_mem2, 2);
+    write(STDOUT_FILENO, large_block1, 3);
+    write(STDOUT_FILENO, large_block2, 3);
 
-    alloc_free(allocator, allocated_mem);
+    alloc_free(allocator, large_block1);
+    alloc_free(allocator, large_block2);
+
+    // Test 3
+    char *mixed_block1 = (char *)alloc_alloc(allocator, 128);
+    char *mixed_block2 = (char *)alloc_alloc(allocator, 1024);
+    char *mixed_block3 = (char *)alloc_alloc(allocator, 8);
+    if (!mixed_block1 || !mixed_block2 || !mixed_block3) {
+        fprintf(stderr, "Failed to allocate mixed blocks\n");
+        return 3;
+    }
+
+    mixed_block1[0] = 'M';
+    mixed_block1[1] = '1';
+    mixed_block1[2] = '\0';
+    mixed_block2[0] = 'M';
+    mixed_block2[1] = '2';
+    mixed_block2[2] = '\0';
+    mixed_block3[0] = 'M';
+    mixed_block3[1] = '3';
+    mixed_block3[2] = '\0';
+
+    write(STDOUT_FILENO, mixed_block1, 3);
+    write(STDOUT_FILENO, mixed_block2, 3);
+    write(STDOUT_FILENO, mixed_block3, 3);
+
+    alloc_free(allocator, mixed_block1);
+    alloc_free(allocator, mixed_block2);
+    alloc_free(allocator, mixed_block3);
+
+    // Test 4
+    char *max_block = (char *)alloc_alloc(allocator, 1024 * 20);
+    if (max_block) {
+        max_block[0] = 'X';
+        max_block[1] = 'M';
+        max_block[2] = '\0';
+        write(STDOUT_FILENO, max_block, 3);
+        alloc_free(allocator, max_block);
+    } else {
+        fprintf(stderr, "Failed to allocate maximum block\n");
+    }
+
     alloc_destroy(allocator);
 
     if (munmap(memory, 100000) == -1) {
