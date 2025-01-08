@@ -24,7 +24,7 @@ typedef struct Page {
 } Page;
 
 typedef struct Buffer {
-    void *val;
+    void *block_address;
     struct Buffer *next;
 } Buffer;
 
@@ -34,10 +34,10 @@ typedef struct FreeList {
 } FreeList;
 
 typedef struct Allocator {
-    Page *kmemsizes;
+    Page *pages_info;
     size_t page_count;
-    FreeList *free_page;
-    Buffer *freelistarr[MAX_ORDER - MIN_ORDER];
+    FreeList *available_pages;
+    Buffer *small_blocks_free_lists[MAX_ORDER - MIN_ORDER];
 } Allocator;
 
 Allocator *allocator_create(void *memory, size_t size);
