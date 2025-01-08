@@ -8,7 +8,6 @@
 
 #define SHM_NAME "/shared_memory"
 #define BUFFER_SIZE 1024
-#define EXIT_FLAG "exit"
 
 typedef struct {
     char buffer[BUFFER_SIZE];
