@@ -1,5 +1,5 @@
-#ifndef OPERATIONAL_SYSTEMS_MKK_H
-#define OPERATIONAL_SYSTEMS_MKK_H
+#ifndef OS_MKK_H
+#define OS_MKK_H
 
 #include <sys/mman.h>
 #include <stddef.h>
@@ -48,4 +48,4 @@ void destroy_buffer(Buffer *start);
 void destroy_free_pages_list(FreeList *start);
 
 
-#endif // OPERATIONAL_SYSTEMS_MKK_H
+#endif // OS_MKK_H
