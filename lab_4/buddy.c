@@ -1,6 +1,6 @@
 #include "buddy.h"
 
-size_t next_power_of_two(size_t size) {
+size_t nearest_power_of_two(size_t size) {
     size_t power = 1;
     while (power < size) {
         power <<= 1;
@@ -24,7 +24,7 @@ size_t get_block_size(size_t level) {
 Allocator* allocator_create(void* memory, size_t size) {
     if (!memory || size < MIN_BLOCK_SIZE) return NULL;
 
-    size_t aligned_size = next_power_of_two(size);
+    size_t aligned_size = nearest_power_of_two(size);
     Allocator *allocator = mmap(NULL, sizeof(Allocator), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (allocator == MAP_FAILED) return NULL;
 
@@ -52,7 +52,7 @@ void* allocator_alloc(Allocator *allocator, size_t size) {
     if (!allocator || size == 0 || size > allocator->size)
         return NULL;
 
-    size_t required_size = next_power_of_two(size);
+    size_t required_size = nearest_power_of_two(size);
     size_t level = get_level(required_size);
 
     if (level > MAX_LEVEL)

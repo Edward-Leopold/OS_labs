@@ -55,29 +55,26 @@ Allocator *allocator_create(void *const memory, const size_t size) {
 
 void *small_alloc(Allocator *const allocator, const size_t size) {
     unsigned char order = NDX(size);
-
     void *allocated_chunk;
 
     // If free cells of this size exist, then use them
     if (allocator->freelistarr[order]) {
         allocated_chunk = allocator->freelistarr[order]->val;
-
         Buffer *residue = allocator->freelistarr[order];
-
         allocator->freelistarr[order] = allocator->freelistarr[order]->next;
-
         munmap(residue, sizeof(Buffer));
 
         return allocated_chunk;
     }
+
     // Else alloc page for this size
 
     if (!allocator->free_page)
         return NULL;
 
     Page *free_page = allocator->free_page->page;
-    allocator->free_page = allocator->free_page->next;
 
+    allocator->free_page = allocator->free_page->next;
     free_page->frag_size = 1 << (MIN_ORDER + order);
 
     int fragments = free_page->page_size / free_page->frag_size;
@@ -87,15 +84,11 @@ void *small_alloc(Allocator *const allocator, const size_t size) {
     Buffer *current_buf = allocator->freelistarr[order];
 
     allocated_chunk = free_page->start_addr;
-
     current_buf->val = free_page->start_addr + free_page->frag_size;
 
-    // Add newly allocated fragments to the pool
     for (int i = 2; i < fragments; ++i) {
         current_buf->next = (Buffer *) mmap(NULL, sizeof(Buffer), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
         current_buf = current_buf->next;
-
         current_buf->val = free_page->start_addr + free_page->frag_size * i;
     }
 
@@ -103,8 +96,6 @@ void *small_alloc(Allocator *const allocator, const size_t size) {
 }
 
 void *large_alloc(Allocator *const allocator, const size_t size) {
-    // Check if contiguous buffers are ok (first fit)
-
     size_t need_pages = size / PAGESIZE + (size % PAGESIZE != 0);
 
     if (need_pages > allocator->page_count)
@@ -116,22 +107,21 @@ void *large_alloc(Allocator *const allocator, const size_t size) {
     Page *available_start = NULL;
 
     while (cur) {
-
         if (cur->next && cur->next->page->start_addr - cur->page->page_size == cur->page->start_addr) {
             available++;
-
-            if (!available_start)
+            if (!available_start) {
                 available_start = cur->page;
+            } 
         } else {
             available_start = NULL;
             available = 0;
         }
 
-        if (available >= need_pages)
-            break;
+        if (available >= need_pages) break;
 
-        if (!available)
+        if (!available) {
             prev = cur;
+        }
 
         cur = cur->next;
     }
@@ -143,10 +133,11 @@ void *large_alloc(Allocator *const allocator, const size_t size) {
             allocated_page = (Page *)((char*)allocated_page->start_addr + allocated_page->page_size);
         }
 
-        if (prev)
+        if (prev) {
             prev->next = cur ? cur->next : NULL;
-        else
+        } else {
             allocator->free_page = cur ? cur->next : NULL;
+        }
 
         munmap(cur, sizeof(FreeList));
         return available_start->start_addr;
@@ -187,7 +178,6 @@ void allocator_free(Allocator *const allocator, void *const memory) {
         page->frag_size = 0;
 
         // Free contiguous pages
-
         if (page_id >= allocator->page_count - 1)
             return;
 
@@ -197,9 +187,7 @@ void allocator_free(Allocator *const allocator, void *const memory) {
         while (cur->frag_size == -1) {
             cur->start_addr = prev->start_addr + prev->page_size;
             cur->frag_size = 0;
-
             prev = cur;
-
             i++;
             cur = &allocator->kmemsizes[page_id + i];
         }
@@ -211,7 +199,6 @@ void allocator_destroy(Allocator *const allocator) {
     for (int i = 0; i < MAX_ORDER - MIN_ORDER; ++i) {
         destroy_buffer(allocator->freelistarr[i]);
     }
-
     destroy_free_pages_list(allocator->free_page);
 
     munmap(allocator->kmemsizes, sizeof(Page) * allocator->page_count);

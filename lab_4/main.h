@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// #include "buddy.h"
 #include "mkk.h"
 
 typedef Allocator *(alloc_create_func)(void *memory, size_t size);
